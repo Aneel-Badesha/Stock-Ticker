@@ -145,8 +145,10 @@ bool yahoo_fetch(const char *symbol, stock_t *out)
     }
 
     cJSON *j_price  = cJSON_GetObjectItemCaseSensitive(meta, "regularMarketPrice");
-    cJSON *j_change = cJSON_GetObjectItemCaseSensitive(meta, "regularMarketChange");
-    cJSON *j_pct    = cJSON_GetObjectItemCaseSensitive(meta, "regularMarketChangePercent");
+    cJSON *j_prev   = cJSON_GetObjectItemCaseSensitive(meta, "chartPreviousClose");
+    if (!cJSON_IsNumber(j_prev)) {
+        j_prev = cJSON_GetObjectItemCaseSensitive(meta, "previousClose");
+    }
     cJSON *j_name   = cJSON_GetObjectItemCaseSensitive(meta, "shortName");
 
     if (!cJSON_IsNumber(j_price)) {
@@ -158,9 +160,15 @@ bool yahoo_fetch(const char *symbol, stock_t *out)
     strncpy(out->symbol, symbol, sizeof(out->symbol) - 1);
     out->symbol[sizeof(out->symbol) - 1] = '\0';
 
-    out->price      = (float)j_price->valuedouble;
-    out->change     = cJSON_IsNumber(j_change) ? (float)j_change->valuedouble : 0.0f;
-    out->change_pct = cJSON_IsNumber(j_pct)    ? (float)j_pct->valuedouble    : 0.0f;
+    out->price = (float)j_price->valuedouble;
+    if (cJSON_IsNumber(j_prev) && j_prev->valuedouble > 0.0) {
+        float prev = (float)j_prev->valuedouble;
+        out->change     = out->price - prev;
+        out->change_pct = (out->change / prev) * 100.0f;
+    } else {
+        out->change     = 0.0f;
+        out->change_pct = 0.0f;
+    }
 
     if (cJSON_IsString(j_name) && j_name->valuestring && strlen(j_name->valuestring) > 0) {
         strncpy(out->short_name, j_name->valuestring, sizeof(out->short_name) - 1);
