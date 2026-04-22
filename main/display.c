@@ -174,16 +174,6 @@ static void draw_hline(int x, int y, int w, uint16_t col)
     fill_rect(x, y, w, 1, col);
 }
 
-static void draw_vline(int x, int y, int h, uint16_t col)
-{
-    fill_rect(x, y, 1, h, col);
-}
-
-static void draw_pixel(int x, int y, uint16_t col)
-{
-    fill_rect(x, y, 1, 1, col);
-}
-
 // ── Filled triangle (for arrows) ─────────────────────────────────────────────
 
 static void fill_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint16_t col)

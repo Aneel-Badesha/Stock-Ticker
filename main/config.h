@@ -1,12 +1,12 @@
 #pragma once
 
 // WiFi
-#define WIFI_SSID       ""
-#define WIFI_PASSWORD   ""
+#define WIFI_SSID       "BadeshaHome"
+#define WIFI_PASSWORD   "Canucks@2011"
 #define WIFI_MAX_RETRY  10
 #define WIFI_HOSTNAME_DEFAULT "stock-ticker-s3"
 // If SSID/PASSWORD and NVS config are empty, prompt via serial monitor and save to NVS.
-#define WIFI_RUNTIME_SETUP_ENABLE 1
+#define WIFI_RUNTIME_SETUP_ENABLE 0
 
 // Stocks
 // Any valid Yahoo Finance symbol: stocks, ETFs, crypto (BTC-USD), indices (^GSPC)
@@ -20,14 +20,15 @@
 #define TICKER_SCROLL_MS       25
 
 // ILI9341 SPI pins (ESP32-S3)
-#define PIN_MOSI    23
-#define PIN_CLK     18
-#define PIN_CS       5
-#define PIN_DC       4
-#define PIN_RST     22
-#define PIN_BL      15   // backlight, set to -1 if wired directly to 3.3 V
+// These defaults are valid ESP32-S3 GPIOs; change to match your wiring.
+#define PIN_MOSI    11
+#define PIN_CLK     12
+#define PIN_CS      10
+#define PIN_DC       9
+#define PIN_RST      8
+#define PIN_BL       7   // backlight, set to -1 if wired directly to 3.3 V
 
-#define SPI_CLOCK_HZ    (40 * 1000 * 1000)
+#define SPI_CLOCK_HZ    (20 * 1000 * 1000)
 
 // Display geometry
 #define LCD_W           320

@@ -8,7 +8,7 @@
  *
  * Notes:
  *  - Yahoo blocks requests without a User-Agent header (returns 429).
- *  - We skip TLS certificate verification (setInsecure equivalent in ESP-IDF).
+ *  - TLS verification uses ESP-IDF's built-in certificate bundle.
  *  - The response can be 20–50 KB; we stream into a heap buffer.
  */
 
@@ -21,6 +21,7 @@
 
 #include "esp_http_client.h"
 #include "esp_tls.h"
+#include "esp_crt_bundle.h"
 #include "esp_log.h"
 #include "cJSON.h"
 
@@ -90,11 +91,8 @@ bool yahoo_fetch(const char *symbol, stock_t *out)
         .event_handler      = http_event_handler,
         .user_data          = &rb,
         .timeout_ms         = 10000,
-        .skip_cert_common_name_check = true,
-        /* Skip server certificate verification — acceptable for
-           a hobbyist display that only reads public market data. */
         .transport_type     = HTTP_TRANSPORT_OVER_SSL,
-        .crt_bundle_attach  = NULL,   // disable bundle → skip verify
+        .crt_bundle_attach  = esp_crt_bundle_attach,
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&cfg);

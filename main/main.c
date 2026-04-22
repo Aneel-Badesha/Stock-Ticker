@@ -168,15 +168,15 @@ static bool wifi_cfg_prompt_serial(wifi_runtime_cfg_t *cfg)
 
 static bool wifi_cfg_load_or_provision(wifi_runtime_cfg_t *cfg)
 {
-    if (wifi_cfg_load_from_nvs(cfg)) {
-        ESP_LOGI(TAG, "Loaded WiFi runtime config from NVS (ssid=%s, host=%s)", cfg->ssid, cfg->hostname);
-        return true;
-    }
-
     wifi_cfg_apply_defaults(cfg);
 
     if (cfg->ssid[0] != '\0') {
         ESP_LOGI(TAG, "Using WiFi defaults from config.h (ssid=%s, host=%s)", cfg->ssid, cfg->hostname);
+        return true;
+    }
+
+    if (wifi_cfg_load_from_nvs(cfg)) {
+        ESP_LOGI(TAG, "Loaded WiFi runtime config from NVS (ssid=%s, host=%s)", cfg->ssid, cfg->hostname);
         return true;
     }
 
