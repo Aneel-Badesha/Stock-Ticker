@@ -53,3 +53,13 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# ESP-IDF build artifacts
+build/
+sdkconfig
+sdkconfig.old
+flasher_args.json
+partition_table/
+
+# ESP-IDF IDE/editor metadata
+.vscode/
