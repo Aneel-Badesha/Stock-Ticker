@@ -123,7 +123,7 @@ static void ili9341_init(void)
     ili_cmd(0xC5); ili_data(0x3E); ili_data(0x28);  // VCOM control
     ili_cmd(0xC7); ili_data(0x86);          // VCOM control 2
 
-    // Landscape: MX=1, MV=1  →  MADCTL 0x28
+    // Landscape, BGR, rotated 180° for this panel wiring.
     ili_cmd(0x36); ili_data(0x28);
 
     ili_cmd(0x3A); ili_data(0x55);          // 16-bit colour (RGB565)
@@ -336,7 +336,7 @@ static void draw_char(int x, int y, char c, uint16_t fg, uint16_t bg, int scale)
     const uint8_t *bm = FONT8[(uint8_t)c - 0x20];
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
-            uint16_t col16 = (bm[row] & (1 << (7 - col))) ? fg : bg;
+            uint16_t col16 = (bm[row] & (1 << col)) ? fg : bg;
             fill_rect(x + col * scale, y + row * scale, scale, scale, col16);
         }
     }
@@ -465,8 +465,19 @@ void display_clear_status(void)
 void display_draw_stock_list(const stock_t *stocks, int count, int active_idx)
 {
     display_lock();
-    for (int i = 0; i < count; i++) {
-        int  y        = ROWS_START_Y + i * ROW_H;
+
+    const int VISIBLE_ROWS = (TICKER_BAR_Y - ROWS_START_Y) / ROW_H;
+    int top = active_idx - VISIBLE_ROWS / 2;
+    if (top > count - VISIBLE_ROWS) top = count - VISIBLE_ROWS;
+    if (top < 0) top = 0;
+    int end = top + VISIBLE_ROWS;
+    if (end > count) end = count;
+
+    fill_rect(0, ROWS_START_Y, LCD_W, TICKER_BAR_Y - ROWS_START_Y, COL_BG);
+
+    for (int slot = 0; slot < end - top; slot++) {
+        int i = top + slot;
+        int  y        = ROWS_START_Y + slot * ROW_H;
         bool is_active = (i == active_idx);
 
         uint16_t row_bg = is_active ? COL_PANEL : COL_BG;
@@ -558,9 +569,8 @@ void display_scroll_ticker(const stock_t *stocks, int count)
     const int BAR_H  = TICKER_BAR_H - 2;
     const int TEXT_Y = BAR_Y + (BAR_H - 8) / 2;
 
-    fill_rect(0, BAR_Y, LCD_W, BAR_H, COL_TICKER_BG);
-
-    // Draw color-coded segments
+    // Draw color-coded segments. draw_text paints bg per pixel, so we don't
+    // clear the whole bar each frame (that caused visible flashing).
     int x = s_ticker_x;
     for (int i = 0; i < count; i++) {
         if (!stocks[i].valid) continue;

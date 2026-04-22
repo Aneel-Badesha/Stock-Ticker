@@ -10,9 +10,9 @@
 
 // Stocks
 // Any valid Yahoo Finance symbol: stocks, ETFs, crypto (BTC-USD), indices (^GSPC)
-#define MAX_STOCKS      8
-#define STOCK_SYMBOLS   { "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA" }
-#define NUM_STOCKS      6
+#define MAX_STOCKS      16
+#define STOCK_SYMBOLS   { "AAPL", "ALAB", "AMZN", "AVGO", "GOOGL", "INTC", "LITE", "META", "MSFT", "MU", "NVDA", "QQQ", "SNDK", "VOO", "VTI", "VXUS" }
+#define NUM_STOCKS      16
 
 // Timing (milliseconds)
 #define FETCH_INTERVAL_MS   60000
@@ -25,12 +25,12 @@
 #define PIN_MISO    13
 #define PIN_CLK     12
 #define PIN_CS      10
-#define PIN_DC       9
-#define PIN_RST      8
-#define PIN_BL       7   // backlight, set to -1 if wired directly to 3.3 V
-#define PIN_BL_ON_LEVEL 0  // set to 1 if your backlight is active-high
+#define PIN_DC      46
+#define PIN_RST      3
+#define PIN_BL      45   // backlight, set to -1 if wired directly to 3.3 V
+#define PIN_BL_ON_LEVEL 1  // set to 0 if your backlight is active-low
 
-#define SPI_CLOCK_HZ    (20 * 1000 * 1000)
+#define SPI_CLOCK_HZ    (10 * 1000 * 1000)
 
 // Display geometry
 #define LCD_W           320
