@@ -23,15 +23,40 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 
 static const char *TAG = "display";
 
 // ── SPI / ILI9341 internals ───────────────────────────────────────────────────
 
 static spi_device_handle_t s_spi = NULL;
+static SemaphoreHandle_t s_display_mutex = NULL;
+
+static inline void display_lock(void)
+{
+    if (s_display_mutex) {
+        xSemaphoreTake(s_display_mutex, portMAX_DELAY);
+    }
+}
+
+static inline void display_unlock(void)
+{
+    if (s_display_mutex) {
+        xSemaphoreGive(s_display_mutex);
+    }
+}
 
 static inline void dc_cmd(void)  { gpio_set_level(PIN_DC, 0); }
 static inline void dc_data(void) { gpio_set_level(PIN_DC, 1); }
+
+static inline void bl_set(bool on)
+{
+#if PIN_BL >= 0
+    gpio_set_level(PIN_BL, on ? PIN_BL_ON_LEVEL : !PIN_BL_ON_LEVEL);
+#else
+    (void)on;
+#endif
+}
 
 static void spi_write_byte(uint8_t b)
 {
@@ -127,7 +152,9 @@ static void ili9341_init(void)
     ili_cmd(0x29);                                   // display on
 
 #if PIN_BL >= 0
-    gpio_set_level(PIN_BL, 1);
+    bl_set(false);
+    vTaskDelay(pdMS_TO_TICKS(10));
+    bl_set(true);
 #endif
 }
 
@@ -328,6 +355,12 @@ static void draw_text(int x, int y, const char *str, uint16_t fg, uint16_t bg, i
 
 void display_init(void)
 {
+    s_display_mutex = xSemaphoreCreateMutex();
+    if (!s_display_mutex) {
+        ESP_LOGE(TAG, "Failed to create display mutex");
+        return;
+    }
+
     // Configure GPIO
     gpio_config_t io = {
         .pin_bit_mask = (1ULL << PIN_DC) | (1ULL << PIN_RST)
@@ -345,7 +378,7 @@ void display_init(void)
     // Init SPI bus
     spi_bus_config_t buscfg = {
         .mosi_io_num   = PIN_MOSI,
-        .miso_io_num   = -1,
+        .miso_io_num   = PIN_MISO,
         .sclk_io_num   = PIN_CLK,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
@@ -368,6 +401,7 @@ void display_init(void)
 
 void display_draw_boot_screen(void)
 {
+    display_lock();
     fill_rect(0, 0, LCD_W, LCD_H, COL_BG);
 
     // Header panel
@@ -381,17 +415,21 @@ void display_draw_boot_screen(void)
     draw_text(76, 72, "No API key required", COL_GRAY, COL_BG, 1);
 
     draw_hline(20, 84, 280, COL_BORDER);
+    display_unlock();
 }
 
 void display_boot_msg(const char *msg, bool error)
 {
+    display_lock();
     fill_rect(0, 130, LCD_W, 30, COL_BG);
     uint16_t col = error ? COL_RED : COL_GRAY;
     draw_text(12, 138, msg, col, COL_BG, 1);
+    display_unlock();
 }
 
 void display_draw_main_screen(void)
 {
+    display_lock();
     fill_rect(0, 0, LCD_W, LCD_H, COL_BG);
 
     // Header
@@ -403,24 +441,30 @@ void display_draw_main_screen(void)
     // Ticker bar
     fill_rect(0, TICKER_BAR_Y, LCD_W, TICKER_BAR_H, COL_TICKER_BG);
     draw_hline(0, TICKER_BAR_Y, LCD_W, COL_BORDER);
+    display_unlock();
 }
 
 void display_show_status(const char *msg)
 {
+    display_lock();
     fill_rect(168, 1, 148, HEADER_H - 2, COL_PANEL);
     draw_text(172, 8, msg, COL_GOLD, COL_PANEL, 1);
+    display_unlock();
 }
 
 void display_clear_status(void)
 {
+    display_lock();
     fill_rect(168, 1, 148, HEADER_H - 2, COL_PANEL);
     draw_text(168, 8, "Yahoo Finance", COL_GRAY, COL_PANEL, 1);
+    display_unlock();
 }
 
 // ── Stock list ────────────────────────────────────────────────────────────────
 
 void display_draw_stock_list(const stock_t *stocks, int count, int active_idx)
 {
+    display_lock();
     for (int i = 0; i < count; i++) {
         int  y        = ROWS_START_Y + i * ROW_H;
         bool is_active = (i == active_idx);
@@ -473,6 +517,7 @@ void display_draw_stock_list(const stock_t *stocks, int count, int active_idx)
             fill_triangle(ax, ay + 4, ax - 4, ay - 4, ax + 4, ay - 4, COL_RED);
         }
     }
+    display_unlock();
 }
 
 // ── Ticker tape ───────────────────────────────────────────────────────────────
@@ -502,8 +547,10 @@ static void rebuild_ticker(const stock_t *stocks, int count)
 
 void display_scroll_ticker(const stock_t *stocks, int count)
 {
+    display_lock();
     if (s_ticker_len == 0) {
         rebuild_ticker(stocks, count);
+        display_unlock();
         return;
     }
 
@@ -539,4 +586,5 @@ void display_scroll_ticker(const stock_t *stocks, int count)
     if (s_ticker_x < -s_ticker_len) {
         s_ticker_x = LCD_W;
     }
+    display_unlock();
 }

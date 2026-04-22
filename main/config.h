@@ -22,11 +22,13 @@
 // ILI9341 SPI pins (ESP32-S3)
 // These defaults are valid ESP32-S3 GPIOs; change to match your wiring.
 #define PIN_MOSI    11
+#define PIN_MISO    13
 #define PIN_CLK     12
 #define PIN_CS      10
 #define PIN_DC       9
 #define PIN_RST      8
 #define PIN_BL       7   // backlight, set to -1 if wired directly to 3.3 V
+#define PIN_BL_ON_LEVEL 0  // set to 1 if your backlight is active-high
 
 #define SPI_CLOCK_HZ    (20 * 1000 * 1000)
 
